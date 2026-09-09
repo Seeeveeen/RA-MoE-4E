@@ -28,30 +28,8 @@ def add_gate_features(
     """
     Construct additional regime/state features used by the gate.
 
-    The supplied final implementation includes:
-
-    - dIV:
-      deviation of implied volatility from its rolling 20-observation
-      mean;
-
-    - OI_chg:
-      within-group change in open interest.
-
-    Parameters
-    ----------
-    df
-        Preprocessed dataset containing sigma and open_interest.
-
-    group_key
-        Column used for within-group rolling calculations.
-
-        The supplied final implementation uses ``secid`` when
-        available.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Copy of the input dataset with IVmean20, dIV, and OI_chg.
+    The input row order is preserved so that the resulting DataFrame
+    remains aligned with the previously constructed temporal windows.
     """
     required = {
         group_key,
@@ -68,12 +46,6 @@ def add_gate_features(
         )
 
     df = df.copy()
-
-    # Ensure rolling operations follow chronological order
-    # within each group.
-    df = df.sort_values(
-        [group_key, "date"]
-    ).reset_index(drop=True)
 
     df["IVmean20"] = (
         df.groupby(
