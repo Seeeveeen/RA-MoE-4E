@@ -8,6 +8,7 @@ from .features import (
     build_residual_features,
     build_static_features,
 )
+from .pipeline import load_data
 from .preprocessing import (
     add_basic_features,
     normalize_columns,
@@ -30,6 +31,7 @@ from .temporal import (
 
 __all__ = [
     "OptionDataset",
+    "load_data",
     "add_basic_features",
     "normalize_columns",
     "preprocess_basic",
