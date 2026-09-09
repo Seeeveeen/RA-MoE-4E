@@ -342,7 +342,6 @@ RA-MoE-4E/
 The `src/ra_moe/` package contains the modular model, preprocessing, training, and core evaluation implementation. Market-specific and post-hoc research analyses are kept separately under `analysis/`.
 
 ---
-
 ## Running the Training Pipeline
 
 Install the public dependencies:
@@ -351,36 +350,127 @@ Install the public dependencies:
 pip install -r requirements.txt
 ```
 
-Then run:
+Run RA-MoE-4E on a compatible cleaned option dataset:
 
 ```bash
-python scripts/train.py --data /path/to/cleaned_option_data.csv
+python scripts/train.py \
+    --data /path/to/cleaned_option_data.csv \
+    --output-dir outputs/experiment
 ```
+
+The training entry point performs data preprocessing, sequential
+train-validation-test splitting, multi-stage model training, and final
+test evaluation.
+
+It also writes aligned test predictions, expert outputs, and routing
+weights to:
+
+```text
+outputs/experiment/test_results.csv
+```
+
+Generated row-level outputs are ignored by Git because they may contain
+information derived from proprietary option data.
 
 For a smaller experimental run:
 
 ```bash
 python scripts/train.py \
     --data /path/to/cleaned_option_data.csv \
-    --sample-fraction 0.1
+    --sample-fraction 0.1 \
+    --output-dir outputs/debug
 ```
 
-Because the underlying OptionMetrics data are proprietary, the original datasets are not included in this repository.
+See [`data/README.md`](data/README.md) for the expected input schema,
+feature construction, splitting behaviour, and scaling details.
 
+### Post-hoc Analysis
+
+The exported test results can be used directly by the public analysis
+scripts.
+
+#### Expert Contribution
+
+```bash
+python analysis/expert_contribution.py \
+    --data outputs/experiment/test_results.csv \
+    --market SPX \
+    --output-dir outputs/experiment/expert_contribution
+```
+
+This performs the public post-hoc expert contribution analysis without
+retraining reduced model architectures.
+
+#### Financial Consistency
+
+```bash
+python analysis/financial_consistency.py \
+    --data outputs/experiment/test_results.csv \
+    --output-dir outputs/experiment/financial_consistency
+```
+
+This evaluates the retained SPX financial-consistency diagnostics on
+the locally generated test output.
+
+#### Cross-Market Gating
+
+Cross-market routing comparison requires outputs from two separate
+market experiments:
+
+```bash
+python analysis/cross_market_gating.py \
+    --spx outputs/spx/test_results.csv \
+    --aapl outputs/aapl/test_results.csv \
+    --output figures/gating_weights_across_markets.png
+```
+
+The public training entry point documents how to run the refactored
+pipeline on compatible data. It does **not** claim exact reproduction
+of every historical market-specific experiment from the original
+research archive.
+
+Because the underlying OptionMetrics data are proprietary, the original
+datasets and row-level generated outputs are not included in this
+repository.
 ---
 
 ## Reproducibility Notes
 
-This repository is a modular refactor of the original experimental RA-MoE-4E codebase.
+This repository is a modular refactor of the original experimental
+RA-MoE-4E codebase.
 
-The refactoring aims to improve readability and organization while preserving the implemented model and training behaviour.
+The refactoring aims to improve readability, portability, and
+organization while preserving the implemented model and training
+behaviour.
 
-Where the written methodology and final implementation differ in feature definitions, Transformer details, training stages, or routing regularization, this repository prioritizes the **implemented experimental behaviour** and documents rather than silently rewrites those differences.
+Where the written methodology and final implementation differ in
+feature definitions, Transformer details, training stages, or routing
+regularization, this repository prioritizes the **implemented
+experimental behaviour** and documents rather than silently rewrites
+those differences.
 
-Historical output files from different experimental runs may contain small differences. Public headline results therefore use a single internally consistent cross-market comparison output rather than mixing metrics across runs.
+Historical output files from different experimental runs contain small
+differences. Public headline results therefore use a single internally
+consistent cross-market comparison output rather than mixing metrics
+across runs.
 
-The original evaluation code also computes relative pricing error (RPE). It is retained in the public evaluation utilities but is not used as a headline metric because of its sensitivity to low-priced options.
+The original evaluation code also computes relative pricing error
+(RPE). It is retained in the public evaluation utilities but is not
+used as a headline metric because of its sensitivity to low-priced
+options.
 
+Exact historical package versions were not preserved in the available
+experimental archive. The public `requirements.txt` therefore documents
+the required Python dependencies without claiming an exact
+reconstruction of the original software environment.
+
+The public training pipeline exports locally generated test predictions,
+expert outputs, and routing weights so that the included post-hoc
+analysis scripts can be run from the same experiment output.
+
+Because the original OptionMetrics observations are proprietary, exact
+end-to-end reproduction of the historical experiments additionally
+requires access to compatible licensed data.
 ---
 
 ## Limitations
