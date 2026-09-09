@@ -80,25 +80,29 @@ def validate_required_columns(df: pd.DataFrame) -> None:
         )
 
 
-def convert_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+def convert_numeric_columns(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
     """
-    Convert available numerical columns to numeric dtype.
+    Convert numerical columns to numeric dtype.
 
-    Invalid values are converted to NaN rather than silently replaced
-    with zero. Missing-value handling is performed explicitly later in
-    the pipeline.
+    This preserves the supplied final implementation:
+    invalid values are replaced with zero, and missing optional
+    numeric columns are initialized to zero.
     """
     df = df.copy()
 
     for column in NUMERIC_COLUMNS:
-    if column in df.columns:
-        df[column] = (
-            pd.to_numeric(
-                df[column],
-                errors="coerce",
+        if column in df.columns:
+            df[column] = (
+                pd.to_numeric(
+                    df[column],
+                    errors="coerce",
+                )
+                .fillna(0.0)
             )
-            .fillna(0.0)
-        )
+        else:
+            df[column] = 0.0
 
     return df
 
