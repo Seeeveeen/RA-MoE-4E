@@ -12,6 +12,12 @@ from .schema import (
     STATIC_FEATURES,
     TEMPORAL_FEATURES,
 )
+from .temporal import (
+    DEFAULT_SEQUENCE_LENGTH,
+    add_return_and_rolling_features,
+    build_temporal_features,
+    build_temporal_windows,
+)
 
 __all__ = [
     "add_basic_features",
@@ -22,4 +28,8 @@ __all__ = [
     "RESIDUAL_FEATURES",
     "TEMPORAL_FEATURES",
     "GATE_EXTRA_FEATURES",
+    "DEFAULT_SEQUENCE_LENGTH",
+    "add_return_and_rolling_features",
+    "build_temporal_features",
+    "build_temporal_windows",
 ]
