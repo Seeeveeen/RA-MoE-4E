@@ -431,12 +431,6 @@ def main() -> None:
         f"Transformer: {average_weights[3]:.4f}"
     )
 
-    # Retain the history object for future result/output integration.
-    _ = training_history
-
-    # Retain alignment information for future evaluation scripts.
-    _ = aligned_df
-
 
 if __name__ == "__main__":
     main()
