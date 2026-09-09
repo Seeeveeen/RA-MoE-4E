@@ -19,6 +19,7 @@ from .schema import (
     STATIC_FEATURES,
     TEMPORAL_FEATURES,
 )
+from .split import split_indices
 from .temporal import (
     DEFAULT_SEQUENCE_LENGTH,
     add_return_and_rolling_features,
@@ -44,4 +45,5 @@ __all__ = [
     "build_gate_extra_features",
     "build_residual_features",
     "build_static_features",
+    "split_indices",
 ]
