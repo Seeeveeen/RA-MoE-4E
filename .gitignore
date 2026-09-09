@@ -61,3 +61,5 @@ Thumbs.db
 # ----------------------------
 .env
 .env.*
+# Generated experiment outputs
+outputs/
