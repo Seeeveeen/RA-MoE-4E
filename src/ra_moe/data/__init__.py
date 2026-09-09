@@ -1,5 +1,12 @@
 """Data processing utilities for RA-MoE-4E."""
 
+from .features import (
+    add_gate_features,
+    build_feature_matrices,
+    build_gate_extra_features,
+    build_residual_features,
+    build_static_features,
+)
 from .preprocessing import (
     add_basic_features,
     normalize_columns,
@@ -32,4 +39,9 @@ __all__ = [
     "add_return_and_rolling_features",
     "build_temporal_features",
     "build_temporal_windows",
+    "add_gate_features",
+    "build_feature_matrices",
+    "build_gate_extra_features",
+    "build_residual_features",
+    "build_static_features",
 ]
