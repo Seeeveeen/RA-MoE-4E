@@ -205,25 +205,30 @@ The supplied implementation uses:
 - random seed: `42`.
 
 ---
-
 ## Evaluation
 
-The core evaluation compares RA-MoE-4E against the BSM baseline using pricing-error metrics including:
+The core evaluation compares RA-MoE-4E against the BSM baseline using
+pricing-error metrics including:
 
 - **Mean Squared Error (MSE)**
 - **Mean Absolute Error (MAE)**
 - **Root Mean Squared Error (RMSE)**
 - **Relative Pricing Error (RPE)**
 
-The analysis also examines:
+The original evaluation also uses a **Diebold–Mariano test** to compare
+the squared pricing-error losses of RA-MoE-4E and the BSM baseline.
+
+Beyond aggregate pricing accuracy, the project examines:
 
 - routing-weight distributions;
 - pricing-error distributions;
 - cross-market expert allocation;
 - post-hoc expert contribution sensitivity;
+- financial-consistency diagnostics on a filtered SPX call-option subset;
 - supplementary implied-volatility diagnostics.
 
-The public repository separates core evaluation metrics from market-specific post-hoc analyses.
+The public repository separates core evaluation metrics from
+market-specific and post-hoc analyses.
 
 ---
 
@@ -281,6 +286,39 @@ For the **Static MLP** and **Transformer** experts, the selected expert output i
 For the **Residual MLP**, the original analysis attenuates the learned residual correction rather than fully removing the expert.
 
 This analysis is therefore interpreted as a **sensitivity diagnostic for expert contribution and specialization**, rather than as a retrained architectural ablation study.
+
+---
+
+## Financial Consistency Diagnostics
+
+The original SPX analysis includes post-hoc diagnostics designed to
+examine whether model predictions exhibit economically meaningful
+option-pricing behaviour.
+
+The analysis is performed on a filtered subset of call options,
+restricting observations to approximately at-the-money contracts
+(`0.95 < moneyness < 1.05`), maturities longer than seven days,
+positive trading volume where available, and non-negligible market
+prices.
+
+The diagnostics include:
+
+- **Strike monotonicity:** measuring the frequency with which predicted
+  call prices increase as strike increases within matched date and
+  maturity groups.
+
+- **Discrete strike convexity:** measuring violations of non-negative
+  second price differences across neighboring strikes.
+
+- **Calendar-spread consistency:** measuring cases where a longer-maturity
+  call is predicted to be cheaper than a shorter-maturity call at the
+  same date and strike.
+
+- **Delta-hedging residuals:** comparing hedging-error RMSE and PnL
+  variance using the supplied option delta as a common hedge ratio.
+
+These are empirical post-hoc diagnostics rather than theoretical
+guarantees that the model satisfies no-arbitrage conditions.
 
 ---
 
@@ -385,15 +423,29 @@ These differences are retained transparently rather than retrospectively alterin
 
 ## Limitations
 
-The empirical evaluation focuses on SPX and AAPL options and therefore does not establish generalization across broader asset classes or market structures.
+The empirical evaluation focuses on SPX and AAPL options and therefore
+does not establish generalization across broader asset classes or
+market structures.
 
-The temporal expert in the supplied implementation operates on fixed-length option-level histories and does not constitute a general market-level temporal representation.
+The temporal expert in the supplied implementation operates on
+fixed-length option-level histories and does not constitute a general
+market-level temporal representation.
 
-The expert contribution analysis is post-hoc and does not retrain reduced architectures after removing individual experts.
+The expert contribution analysis is post-hoc and does not retrain
+reduced architectures after removing individual experts. In the
+residual-expert sensitivity condition, the residual correction is
+attenuated rather than fully removed.
 
-Some supplementary analyses, including implied-volatility diagnostics, use market-specific preprocessing and inversion settings and should therefore not be interpreted as a unified cross-market evaluation protocol.
+Financial-consistency results are empirical diagnostics computed on a
+filtered subset of SPX call options. The discrete convexity diagnostic
+does not explicitly adjust second differences for unequal strike
+spacing, and the hedging analysis uses a supplied option delta rather
+than a model-derived RA-MoE hedge ratio. These results should therefore
+not be interpreted as theoretical no-arbitrage guarantees.
 
-Finally, this repository represents a refactoring of an experimental research codebase rather than a production option-pricing library.
+Some supplementary implied-volatility analyses use market-specific
+filtering, inversion ranges, and data schemas and should not be
+interpreted as a unified cross-market IVRMSE benchmark.
 
 ---
 
