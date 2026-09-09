@@ -2,6 +2,7 @@
 
 from .bsm import bsm_price_numpy, bsm_price_torch
 from .mlp import FeedForwardMLP, ResidualExpert, StaticMLPExpert
+from .transformer import TransformerExpert
 
 __all__ = [
     "bsm_price_numpy",
@@ -9,4 +10,5 @@ __all__ = [
     "FeedForwardMLP",
     "ResidualExpert",
     "StaticMLPExpert",
+    "TransformerExpert",
 ]
