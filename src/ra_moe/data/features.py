@@ -159,25 +159,14 @@ def build_residual_features(
 
     Expert 2 is the residual-correction MLP.
 
-    Notes
-    -----
-    This reproduces the feature set in the supplied final
-    implementation.
-
-    Delta_BS is not explicitly included as an input feature here.
-    In the supplied implementation, the residual expert is instead
-    pretrained against the target:
-
-        market_price - BSM_price
-
-    The distinction is documented for reproducibility.
-
-    Returns
-    -------
-    numpy.ndarray
-        Matrix with shape
-        ``(n_observations, n_residual_features)``.
+    The supplied final implementation uses a zero-valued skew
+    placeholder when no skew column is available.
     """
+    df = df.copy()
+
+    if "skew" not in df.columns:
+        df["skew"] = 0.0
+
     _validate_feature_columns(
         df=df,
         feature_names=RESIDUAL_FEATURES,
