@@ -58,27 +58,15 @@ The weights are generated through a temperature-controlled softmax gating networ
 | **Static MLP** | Cross-sectional learning | Captures nonlinear relationships across static option and market features |
 | **Transformer** | Sequential learning | Processes fixed-length histories of option-level temporal features |
 
-```text
-                     Option & Market Features
-                              │
-              ┌───────────────┴───────────────┐
-              │                               │
-              ▼                               ▼
-       Specialized Experts              Gating Network
-              │                               │
-    ┌─────────┼─────────┬─────────┐           │
-    ▼         ▼         ▼         ▼           ▼
-   BSM     Residual   Static  Transformer   Softmax
-             MLP      MLP                   Weights
-    │         │         │         │       w₁ w₂ w₃ w₄
-    └─────────┴─────────┴─────────┴───────────┘
-                              │
-                              ▼
-                    Weighted Aggregation
-                              │
-                              ▼
-                     Final Option Price
-```
+<p align="center">
+  <img src="figures/architecture.png"
+       alt="RA-MoE-4E architecture"
+       width="900">
+</p>
+
+<p align="center">
+  <em>RA-MoE-4E architecture: four heterogeneous experts are dynamically combined through a regime-aware gating network.</em>
+</p>
 
 ---
 
