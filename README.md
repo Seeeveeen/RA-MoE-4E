@@ -36,17 +36,13 @@ RA-MoE-4E combines four heterogeneous experts through a **regime-aware gating ne
 For each option observation, the final prediction is a dynamically weighted combination of the four expert outputs:
 
 $$
-P_{\mathrm{hybrid}}
-=
-\sum_{i=1}^{4} w_i E_i(X_i)
+P_{\mathrm{hybrid}} = \sum_{i=1}^{4} w_i E_i(X_i)
 $$
 
 where
 
 $$
-w_i \geq 0,
-\qquad
-\sum_{i=1}^{4} w_i = 1.
+w_i \geq 0, \qquad \sum_{i=1}^{4} w_i = 1
 $$
 
 The weights are generated through a temperature-controlled softmax gating network using option and market-state features.
@@ -108,7 +104,7 @@ The residual-correction network receives the standardized static representation 
 During residual-expert pretraining, the learning target is:
 
 $$
-P_{\mathrm{market}} - P_{\mathrm{BSM}}.
+P_{\mathrm{market}} - P_{\mathrm{BSM}}
 $$
 
 ### Transformer Expert
@@ -163,11 +159,7 @@ Training follows the procedure implemented in the supplied final experimental co
 The residual MLP is first trained for **5 epochs** against:
 
 $$
-y_{\mathrm{residual}}
-=
-P_{\mathrm{market}}
--
-P_{\mathrm{BSM}}.
+y_{\mathrm{residual}} = P_{\mathrm{market}} - P_{\mathrm{BSM}}
 $$
 
 ### Stage 2 — Expert Training with the Gate Frozen
@@ -227,16 +219,7 @@ The canonical cross-market evaluation reports lower MSE, MAE, and RMSE for RA-Mo
 Relative improvement is defined as:
 
 $$
-\mathrm{Improvement}
-=
-\frac{
-\mathrm{MSE}_{\mathrm{BSM}}
--
-\mathrm{MSE}_{\mathrm{RA\text{-}MoE}}
-}{
-\mathrm{MSE}_{\mathrm{BSM}}
-}
-\times 100.
+\mathrm{Improvement} = \frac{\mathrm{MSE}_{\mathrm{BSM}} - \mathrm{MSE}_{\mathrm{RA\text{-}MoE}}}{\mathrm{MSE}_{\mathrm{BSM}}} \times 100
 $$
 
 <p align="center">
