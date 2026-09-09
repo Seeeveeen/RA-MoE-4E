@@ -67,11 +67,13 @@ def add_return_and_rolling_features(
         [group_key, "date"]
     ).reset_index(drop=True)
 
-    safe_spot = df["S"].where(
-        df["S"] > 0
+    df["logS"] = (
+    np.log(
+        df["S"].replace(0, np.nan)
     )
-
-    df["logS"] = np.log(safe_spot)
+    .ffill()
+    .fillna(0.0)
+)
 
     df["ret"] = (
         df.groupby(group_key, sort=False)["logS"]
