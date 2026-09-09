@@ -15,6 +15,7 @@ from __future__ import annotations
 
 REQUIRED_COLUMNS = (
     "secid",
+    "optionid",
     "date",
     "S",
     "K",
