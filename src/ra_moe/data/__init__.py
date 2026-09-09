@@ -1,5 +1,6 @@
 """Data processing utilities for RA-MoE-4E."""
 
+from .dataset import OptionDataset
 from .features import (
     add_gate_features,
     build_feature_matrices,
@@ -28,6 +29,7 @@ from .temporal import (
 )
 
 __all__ = [
+    "OptionDataset",
     "add_basic_features",
     "normalize_columns",
     "preprocess_basic",
