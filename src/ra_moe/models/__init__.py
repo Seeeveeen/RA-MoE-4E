@@ -3,6 +3,7 @@
 from .bsm import bsm_price_numpy, bsm_price_torch
 from .gating import GatingNetwork
 from .mlp import FeedForwardMLP, ResidualExpert, StaticMLPExpert
+from .ra_moe import RAMoE4E
 from .transformer import TransformerExpert
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "StaticMLPExpert",
     "TransformerExpert",
     "GatingNetwork",
+    "RAMoE4E",
 ]
