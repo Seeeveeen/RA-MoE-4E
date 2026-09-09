@@ -13,9 +13,11 @@ The script performs:
 4. RA-MoE-4E model initialization.
 5. Multi-stage model training.
 6. Final test-set evaluation.
+7. Export of aligned test predictions, expert outputs, and routing
+   weights for downstream analysis.
 
-Result saving, statistical tests, and diagnostic plotting are handled
-separately from this core training entry point.
+Generated row-level outputs may contain information derived from
+proprietary option data and should not be committed to the repository.
 """
 
 from __future__ import annotations
@@ -78,12 +80,7 @@ EARLY_STOPPING_PATIENCE = 5
 
 
 def parse_args() -> argparse.Namespace:
-    """
-    Parse command-line arguments.
-
-    Only the data path and optional sampling fraction are exposed here.
-    Model and training defaults preserve the supplied final experiment.
-    """
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description=(
             "Train the RA-MoE-4E option-pricing model."
@@ -107,6 +104,16 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Fraction of aligned observations used for training. "
             "Default: 1.0, matching the full supplied experiment."
+        ),
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("outputs"),
+        help=(
+            "Directory used to save aligned test predictions, "
+            "expert outputs, and routing weights."
         ),
     )
 
@@ -183,9 +190,11 @@ def main() -> None:
     temporal_train = temporal_features[train_indices]
     targets_train = targets[train_indices]
     bsm_train = bsm_prices[train_indices]
+
     residual_train = residual_extra_features[
         train_indices
     ]
+
     gate_train = gate_extra_features[
         train_indices
     ]
@@ -194,18 +203,23 @@ def main() -> None:
     static_validation = static_features[
         validation_indices
     ]
+
     temporal_validation = temporal_features[
         validation_indices
     ]
+
     targets_validation = targets[
         validation_indices
     ]
+
     bsm_validation = bsm_prices[
         validation_indices
     ]
+
     residual_validation = residual_extra_features[
         validation_indices
     ]
+
     gate_validation = gate_extra_features[
         validation_indices
     ]
@@ -215,9 +229,11 @@ def main() -> None:
     temporal_test = temporal_features[test_indices]
     targets_test = targets[test_indices]
     bsm_test = bsm_prices[test_indices]
+
     residual_test = residual_extra_features[
         test_indices
     ]
+
     gate_test = gate_extra_features[
         test_indices
     ]
@@ -265,12 +281,6 @@ def main() -> None:
 
     # -----------------------------------------------------------------
     # DataLoaders
-    #
-    # Preserve the supplied final implementation:
-    # - training batch size = 512
-    # - validation/test batch size = 1024
-    # - training shuffle = True
-    # - training drop_last = True
     # -----------------------------------------------------------------
 
     train_loader = DataLoader(
@@ -293,16 +303,20 @@ def main() -> None:
     )
 
     # -----------------------------------------------------------------
-    # Infer model dimensions from the actual prepared datasets
+    # Infer model dimensions from prepared datasets
     # -----------------------------------------------------------------
 
-    static_dim = train_dataset.static_features.shape[1]
+    static_dim = (
+        train_dataset.static_features.shape[1]
+    )
 
     residual_dim = (
         train_dataset.residual_features.shape[1]
     )
 
-    gate_dim = train_dataset.gate_features.shape[1]
+    gate_dim = (
+        train_dataset.gate_features.shape[1]
+    )
 
     temporal_dim = (
         train_dataset.temporal_features.shape[2]
@@ -338,7 +352,7 @@ def main() -> None:
 
     print("Starting RA-MoE-4E training...")
 
-    training_history = train_model(
+    train_model(
         model=model,
         train_loader=train_loader,
         validation_loader=validation_loader,
@@ -400,12 +414,15 @@ def main() -> None:
 
     print("\nFinal test evaluation")
     print("---------------------")
+
     print(
         f"RA-MoE-4E MSE: {hybrid_mse:.6f}"
     )
+
     print(
         f"BSM baseline MSE: {bsm_mse:.6f}"
     )
+
     print(
         "Relative MSE improvement vs BSM: "
         f"{improvement:.2f}%"
@@ -418,17 +435,92 @@ def main() -> None:
 
     print("\nAverage routing weights")
     print("-----------------------")
+
     print(
         f"BSM:         {average_weights[0]:.4f}"
     )
+
     print(
         f"Residual:    {average_weights[1]:.4f}"
     )
+
     print(
         f"Static MLP:  {average_weights[2]:.4f}"
     )
+
     print(
         f"Transformer: {average_weights[3]:.4f}"
+    )
+
+    # -----------------------------------------------------------------
+    # Export aligned test results for downstream analyses
+    # -----------------------------------------------------------------
+
+    args.output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    test_output = (
+        aligned_df
+        .iloc[test_indices]
+        .copy()
+        .reset_index(drop=True)
+    )
+
+    test_output["ra_moe_pred"] = (
+        test_result["pred"]
+    )
+
+    test_output["bs_pred"] = (
+        bsm_test_array
+    )
+
+    test_output["w_bs"] = (
+        test_result["weights"][:, 0]
+    )
+
+    test_output["w_resid"] = (
+        test_result["weights"][:, 1]
+    )
+
+    test_output["w_mlp"] = (
+        test_result["weights"][:, 2]
+    )
+
+    test_output["w_trans"] = (
+        test_result["weights"][:, 3]
+    )
+
+    test_output["expert_bs"] = (
+        test_result["experts"][:, 0]
+    )
+
+    test_output["expert_resid"] = (
+        test_result["experts"][:, 1]
+    )
+
+    test_output["expert_mlp"] = (
+        test_result["experts"][:, 2]
+    )
+
+    test_output["expert_trans"] = (
+        test_result["experts"][:, 3]
+    )
+
+    test_output_path = (
+        args.output_dir
+        / "test_results.csv"
+    )
+
+    test_output.to_csv(
+        test_output_path,
+        index=False,
+    )
+
+    print(
+        "\nTest results saved to: "
+        f"{test_output_path}"
     )
 
 
