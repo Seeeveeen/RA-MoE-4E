@@ -33,7 +33,7 @@ NUMERIC_COLUMNS = (
 )
 
 
-def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+def normalize_s(df: pd.DataFrame) -> pd.DataFrame:
     """
     Normalize raw dataset column names to the internal RA-MoE schema.
 
@@ -91,11 +91,14 @@ def convert_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     for column in NUMERIC_COLUMNS:
-        if column in df.columns:
-            df[column] = pd.to_numeric(
+    if column in df.columns:
+        df[column] = (
+            pd.to_numeric(
                 df[column],
                 errors="coerce",
             )
+            .fillna(0.0)
+        )
 
     return df
 
