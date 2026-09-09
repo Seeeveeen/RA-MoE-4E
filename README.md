@@ -58,8 +58,6 @@ The weights are generated through a temperature-controlled softmax gating networ
 | **Static MLP** | Cross-sectional learning | Captures nonlinear relationships across static option and market features |
 | **Transformer** | Sequential learning | Processes fixed-length histories of option-level temporal features |
 
-The overall architecture can be summarized as:
-
 ```text
                      Option & Market Features
                               │
@@ -86,8 +84,6 @@ The overall architecture can be summarized as:
 
 ## Research Questions
 
-This project investigates four main questions:
-
 **RQ1.** Can dynamic expert routing improve option-pricing performance across heterogeneous observations and market structures?
 
 **RQ2.** Can theory-driven and neural experts provide complementary inductive biases?
@@ -106,10 +102,8 @@ The implementation uses separate feature representations for different component
 
 The static expert receives features including:
 
-- spot price;
-- strike price;
-- moneyness;
-- time to maturity;
+- spot price and strike price;
+- moneyness and time to maturity;
 - implied volatility;
 - short- and medium-window realized-volatility statistics;
 - implied-volatility dispersion;
@@ -141,15 +135,7 @@ The default sequence length is **10 observations**.
 
 ### Gating Network
 
-The gating network combines the standardized static representation with additional state features including:
-
-- implied volatility;
-- moneyness;
-- time to maturity;
-- realized-volatility measures;
-- implied-volatility deviation;
-- bid–ask spread;
-- change in open interest.
+The gating network combines the standardized static representation with additional state features including implied volatility, moneyness, time to maturity, realized-volatility measures, implied-volatility deviation, bid–ask spread, and change in open interest.
 
 The resulting routing distribution determines the contribution of each expert to the final prediction.
 
@@ -162,11 +148,11 @@ The empirical study uses two option markets with substantially different charact
 - **SPX index options:** approximately 3.94 million observations after filtering.
 - **AAPL equity options:** approximately 0.85 million observations after filtering.
 
-The analysis uses option characteristics, implied-volatility information, liquidity variables, Greeks, and temporal market features.
-
 Raw option data were obtained from **OptionMetrics IvyDB U.S.**
 
-> **Data availability:** Raw OptionMetrics data are not distributed in this repository because of licensing restrictions. The repository provides the model implementation and preprocessing logic without redistributing proprietary observations.
+> **Data availability:** Raw OptionMetrics observations and large derived datasets are not distributed in this repository because of licensing restrictions. The repository exposes the model, preprocessing, training, and evaluation logic without redistributing proprietary observations.
+
+See [`data/README.md`](data/README.md) for the expected input schema.
 
 ---
 
@@ -176,7 +162,7 @@ Training follows the procedure implemented in the supplied final experimental co
 
 ### Stage 1 — Residual-Expert Pretraining
 
-The residual MLP is first trained for **5 epochs** against the difference between observed market prices and BSM prices:
+The residual MLP is first trained for **5 epochs** against:
 
 $$
 y_{\mathrm{residual}}
@@ -192,9 +178,7 @@ The gating network is frozen while the trainable experts are optimized through t
 
 ### Stage 3 — Joint Fine-Tuning
 
-The gate is unfrozen and the complete mixture is jointly optimized for up to **20 epochs**.
-
-Validation-based early stopping is used with a patience of **5 epochs**, after which the best validation model state is restored.
+The gate is unfrozen and the complete mixture is jointly optimized for up to **20 epochs**, with validation-based early stopping using a patience of **5 epochs**.
 
 The supplied implementation uses:
 
@@ -204,19 +188,20 @@ The supplied implementation uses:
 - gating temperature: `4.0`;
 - random seed: `42`.
 
+The supplied SPX implementation uses a residual scaling factor of `5.0`. Market-specific experimental configurations may differ.
+
 ---
+
 ## Evaluation
 
-The core evaluation compares RA-MoE-4E against the BSM baseline using
-pricing-error metrics including:
+The core evaluation compares RA-MoE-4E against the BSM baseline using:
 
 - **Mean Squared Error (MSE)**
 - **Mean Absolute Error (MAE)**
 - **Root Mean Squared Error (RMSE)**
 - **Relative Pricing Error (RPE)**
 
-The original evaluation also uses a **Diebold–Mariano test** to compare
-the squared pricing-error losses of RA-MoE-4E and the BSM baseline.
+The original evaluation also uses a **Diebold–Mariano test** to compare squared pricing-error losses between RA-MoE-4E and the BSM baseline.
 
 Beyond aggregate pricing accuracy, the project examines:
 
@@ -224,23 +209,22 @@ Beyond aggregate pricing accuracy, the project examines:
 - pricing-error distributions;
 - cross-market expert allocation;
 - post-hoc expert contribution sensitivity;
-- financial-consistency diagnostics on a filtered SPX call-option subset;
+- financial-consistency diagnostics on a filtered SPX call-option subset.
 
-The public repository separates core evaluation metrics from
-market-specific and post-hoc analyses.
+Core metrics are separated from market-specific and post-hoc analyses in the public repository.
 
 ---
 
 ## Main Results
 
-The original experimental evaluation found lower pricing errors for RA-MoE-4E than for the BSM benchmark in both SPX and AAPL.
+The canonical cross-market evaluation output reports lower MSE, MAE, and RMSE for RA-MoE-4E than for the BSM baseline in both SPX and AAPL.
 
-| Market | RA-MoE-4E RMSE | BSM RMSE |
-|---|---:|---:|
-| **SPX** | 1.297 | 1.379 |
-| **AAPL** | 0.375 | 0.405 |
+| Market | RA-MoE-4E MSE | BSM MSE | RA-MoE-4E RMSE | BSM RMSE | Relative MSE Improvement |
+|---|---:|---:|---:|---:|---:|
+| **SPX** | 1.6819 | 1.9016 | 1.2969 | 1.3790 | **11.55%** |
+| **AAPL** | 0.1403 | 0.1640 | 0.3746 | 0.4050 | **14.46%** |
 
-The implementation additionally computes relative improvement against BSM using MSE:
+Relative improvement is defined as:
 
 $$
 \mathrm{Improvement}
@@ -255,69 +239,55 @@ $$
 \times 100.
 $$
 
-These results motivate examining not only aggregate prediction accuracy, but also how the learned mixture distributes responsibility among heterogeneous experts.
+The cross-market comparison also reports lower MAE for RA-MoE-4E in both markets.
 
 ---
 
 ## Cross-Market Expert Specialization
 
-A central interpretability component of RA-MoE-4E is the learned gating distribution.
+The learned routing distributions differ substantially between SPX and AAPL.
 
-For each market, the average routing weights of the four experts are computed:
+| Market | BSM | Residual MLP | Static MLP | Transformer |
+|---|---:|---:|---:|---:|
+| **SPX** | 94.11% | 2.12% | 3.60% | 0.17% |
+| **AAPL** | 44.27% | 44.76% | 4.16% | 6.82% |
 
-- BSM;
-- Residual MLP;
-- Static MLP;
-- Transformer.
+In the canonical cross-market output, SPX routing is dominated by the BSM expert, whereas AAPL assigns comparable average weight to the BSM and residual-correction experts.
 
-Comparing these allocations between SPX and AAPL provides a direct view of whether the mixture relies on different expert structures across different option markets.
-
-> Cross-market gating visualization will be added from the original experimental outputs.
+These allocations are interpreted as descriptive evidence of learned expert specialization rather than as causal evidence about market structure.
 
 ---
 
 ## Expert Contribution Analysis
 
-A post-hoc contribution analysis examines how predictions change when selected expert outputs are modified or removed.
+The original project includes a post-hoc sensitivity analysis of expert contributions.
 
-For the **Static MLP** and **Transformer** experts, the selected expert output is removed and the remaining routing weights are renormalized.
+For the **Static MLP** and **Transformer**, the selected expert output is removed and the remaining routing weights are renormalized.
 
 For the **Residual MLP**, the original analysis attenuates the learned residual correction rather than fully removing the expert.
 
-This analysis is therefore interpreted as a **sensitivity diagnostic for expert contribution and specialization**, rather than as a retrained architectural ablation study.
+The public analysis therefore describes these experiments as **expert contribution sensitivity**, rather than as retrained architectural ablation.
+
+The original output indicates that prediction sensitivity differs substantially across experts and markets. These results should be interpreted as post-hoc diagnostics of the trained mixture.
 
 ---
 
 ## Financial Consistency Diagnostics
 
-The original SPX analysis includes post-hoc diagnostics designed to
-examine whether model predictions exhibit economically meaningful
-option-pricing behaviour.
+The original SPX analysis includes post-hoc diagnostics designed to examine economically meaningful option-pricing behaviour.
 
-The analysis is performed on a filtered subset of call options,
-restricting observations to approximately at-the-money contracts
-(`0.95 < moneyness < 1.05`), maturities longer than seven days,
-positive trading volume where available, and non-negligible market
-prices.
+The analysis is performed on a filtered call-option subset, restricting observations to approximately at-the-money contracts (`0.95 < moneyness < 1.05`), maturities longer than seven days, positive trading volume where available, and non-negligible market prices.
 
 The diagnostics include:
 
-- **Strike monotonicity:** measuring the frequency with which predicted
-  call prices increase as strike increases within matched date and
-  maturity groups.
+- **Strike monotonicity**
+- **Discrete strike convexity**
+- **Calendar-spread consistency**
+- **Delta-hedging residuals**
 
-- **Discrete strike convexity:** measuring violations of non-negative
-  second price differences across neighboring strikes.
+In the retained output, RA-MoE-4E and BSM exhibit similar strike-monotonicity violation rates. RA-MoE-4E shows a slightly lower calendar-spread violation rate, while BSM shows lower discrete-convexity violations and slightly lower hedging-error diagnostics.
 
-- **Calendar-spread consistency:** measuring cases where a longer-maturity
-  call is predicted to be cheaper than a shorter-maturity call at the
-  same date and strike.
-
-- **Delta-hedging residuals:** comparing hedging-error RMSE and PnL
-  variance using the supplied option delta as a common hedge ratio.
-
-These are empirical post-hoc diagnostics rather than theoretical
-guarantees that the model satisfies no-arbitrage conditions.
+These tests are empirical post-hoc diagnostics rather than theoretical guarantees that RA-MoE-4E satisfies no-arbitrage conditions.
 
 ---
 
@@ -327,49 +297,59 @@ guarantees that the model satisfies no-arbitrage conditions.
 RA-MoE-4E/
 │
 ├── README.md
+├── requirements.txt
 ├── .gitignore
+│
+├── data/
+│   └── README.md
 │
 ├── scripts/
 │   └── train.py
 │
-├── src/
-│   └── ra_moe/
-│       │
-│       ├── models/
-│       │   ├── bsm.py
-│       │   ├── mlp.py
-│       │   ├── transformer.py
-│       │   ├── gating.py
-│       │   └── ra_moe.py
-│       │
-│       ├── data/
-│       │   ├── schema.py
-│       │   ├── preprocessing.py
-│       │   ├── temporal.py
-│       │   ├── features.py
-│       │   ├── split.py
-│       │   ├── dataset.py
-│       │   └── pipeline.py
-│       │
-│       ├── training/
-│       │   ├── losses.py
-│       │   ├── epoch.py
-│       │   └── workflow.py
-│       │
-│       └── evaluation/
-│           └── metrics.py
+├── analysis/
+│   ├── cross_market_gating.py
+│   ├── expert_contribution.py
+│   └── financial_consistency.py
 │
-└── analysis/
-    └── [post-hoc analysis scripts]
+└── src/
+    └── ra_moe/
+        ├── models/
+        │   ├── bsm.py
+        │   ├── mlp.py
+        │   ├── transformer.py
+        │   ├── gating.py
+        │   └── ra_moe.py
+        │
+        ├── data/
+        │   ├── schema.py
+        │   ├── preprocessing.py
+        │   ├── temporal.py
+        │   ├── features.py
+        │   ├── split.py
+        │   ├── dataset.py
+        │   └── pipeline.py
+        │
+        ├── training/
+        │   ├── losses.py
+        │   ├── epoch.py
+        │   └── workflow.py
+        │
+        └── evaluation/
+            ├── metrics.py
+            └── statistical.py
 ```
-
-The repository is being progressively refactored from the original experimental codebase while preserving the implemented research workflow.
 
 ---
 
 ## Running the Training Pipeline
 
-The core training workflow can be launched with:
+Install the public dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then run:
 
 ```bash
 python scripts/train.py --data /path/to/cleaned_option_data.csv
@@ -383,9 +363,7 @@ python scripts/train.py \
     --sample-fraction 0.1
 ```
 
-The default configuration preserves the main settings of the supplied final implementation.
-
-Because the underlying OptionMetrics data are proprietary, the original datasets are not included in this repository.
+Because the underlying OptionMetrics data are proprietary, the original datasets are not included.
 
 ---
 
@@ -393,50 +371,36 @@ Because the underlying OptionMetrics data are proprietary, the original datasets
 
 This repository is a modular refactor of the original experimental RA-MoE-4E codebase.
 
-The refactoring aims to improve readability and organization while preserving the implemented model and training behavior.
+The refactoring aims to improve readability and organization while preserving the implemented model and training behaviour.
 
-Where the written methodology and supplied final implementation differ, the repository prioritizes the **implemented experimental behavior** rather than silently modifying the code to match the written description.
+Where the written methodology and supplied final implementation differ, the repository prioritizes the **implemented experimental behaviour** rather than silently modifying the code to match the written description.
 
-Examples include differences involving:
+Material differences identified during refactoring include aspects of:
 
 - Transformer positional encoding;
 - temporal feature definitions;
 - residual-expert feature specification;
 - selected hyperparameters;
 - training-stage descriptions;
-- routing regularization behavior.
+- routing regularization behaviour.
 
-These differences are retained transparently rather than retrospectively altering the experiments that produced the original results.
+Historical output files from different experimental runs may contain small differences. Public headline results therefore use a single internally consistent cross-market comparison output rather than mixing metrics across runs.
 
 ---
 
 ## Limitations
 
-The empirical evaluation focuses on SPX and AAPL options and therefore
-does not establish generalization across broader asset classes or
-market structures.
+The empirical evaluation focuses on SPX and AAPL options and therefore does not establish generalization across broader asset classes or market structures.
 
-The temporal expert in the supplied implementation operates on
-fixed-length option-level histories and does not constitute a general
-market-level temporal representation.
+The temporal expert in the supplied implementation operates on fixed-length option-level histories and does not constitute a general market-level temporal representation.
 
-The expert contribution analysis is post-hoc and does not retrain
-reduced architectures after removing individual experts. In the
-residual-expert sensitivity condition, the residual correction is
-attenuated rather than fully removed.
+The expert contribution analysis is post-hoc and does not retrain reduced architectures after removing individual experts. In the residual-expert sensitivity condition, the residual correction is attenuated rather than fully removed.
 
-Financial-consistency results are empirical diagnostics computed on a
-filtered subset of SPX call options. The discrete convexity diagnostic
-does not explicitly adjust second differences for unequal strike
-spacing, and the hedging analysis uses a supplied option delta rather
-than a model-derived RA-MoE hedge ratio. These results should therefore
-not be interpreted as theoretical no-arbitrage guarantees.
+Financial-consistency results are empirical diagnostics computed on a filtered subset of SPX call options. The discrete convexity diagnostic does not explicitly adjust second differences for unequal strike spacing, and the hedging analysis uses a supplied option delta rather than a model-derived RA-MoE hedge ratio. These results should therefore not be interpreted as theoretical no-arbitrage guarantees.
 
-Supplementary implied-volatility analyses were explored during the
-original project but are not included in the public repository because
-the SPX and AAPL scripts used market-specific filtering, inversion
-ranges, and data schemas. They are therefore not treated here as a
-standardized cross-market evaluation.
+Supplementary implied-volatility analyses were explored during the original project but are not included in the public repository because the SPX and AAPL scripts used market-specific filtering, inversion ranges, and data schemas. They are therefore not treated here as a standardized cross-market evaluation.
+
+Finally, this repository is a modular refactor of an experimental research codebase rather than a production option-pricing library.
 
 ---
 
