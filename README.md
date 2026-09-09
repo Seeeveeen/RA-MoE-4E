@@ -70,11 +70,11 @@ The weights are generated through a temperature-controlled softmax gating networ
 
 ## Research Questions
 
-**RQ1.** Can dynamic expert routing improve option-pricing performance across heterogeneous observations and market structures?
+**RQ1.** Can dynamic expert routing improve option-pricing performance across heterogeneous observations and different option markets?
 
 **RQ2.** Can theory-driven and neural experts provide complementary inductive biases?
 
-**RQ3.** Do different experts exhibit distinct allocation patterns across different markets and option characteristics?
+**RQ3.** Do different experts exhibit distinct allocation patterns across different option markets?
 
 **RQ4.** Can a theory-guided mixture improve predictive performance while retaining interpretable connections to classical option-pricing structure?
 
@@ -152,7 +152,7 @@ See [`data/README.md`](data/README.md) for the expected input schema and preproc
 
 ## Training Strategy
 
-Training follows the procedure implemented in the supplied final experimental codebase.
+Training follows a three-stage procedure used in the final experimental implementation.
 
 ### Stage 1 — Residual-Expert Pretraining
 
@@ -180,18 +180,15 @@ The supplied implementation uses:
 - gating temperature: `4.0`;
 - random seed: `42`.
 
-The supplied SPX implementation uses a residual scaling factor of `5.0`. Market-specific experimental configurations may differ.
-
 ---
 
 ## Evaluation
 
-The core evaluation compares RA-MoE-4E against the BSM baseline using:
+The core public comparison focuses on:
 
 - **Mean Squared Error (MSE)**
 - **Mean Absolute Error (MAE)**
 - **Root Mean Squared Error (RMSE)**
-- **Relative Pricing Error (RPE)**
 
 The original evaluation also uses a **Diebold–Mariano test** to compare squared pricing-error losses between RA-MoE-4E and the BSM baseline.
 
@@ -209,7 +206,7 @@ Core metrics are separated from market-specific and post-hoc analyses in the pub
 
 ## Main Results
 
-The canonical cross-market evaluation reports lower MSE, MAE, and RMSE for RA-MoE-4E than for the BSM baseline in both SPX and AAPL.
+The canonical cross-market evaluation reports lower MSE and RMSE for RA-MoE-4E than for the BSM baseline in both SPX and AAPL.
 
 | Market | RA-MoE-4E MSE | BSM MSE | RA-MoE-4E RMSE | BSM RMSE | Relative MSE Improvement |
 |---|---:|---:|---:|---:|---:|
@@ -279,12 +276,12 @@ The original SPX analysis includes post-hoc diagnostics designed to examine econ
 
 The analysis is performed on a filtered call-option subset, restricting observations to approximately at-the-money contracts (`0.95 < moneyness < 1.05`), maturities longer than seven days, positive trading volume where available, and non-negligible market prices.
 
-The diagnostics include:
+The diagnostics examine:
 
-- **Strike monotonicity** — whether predicted call prices increase as strike increases within matched date and maturity groups;
-- **Discrete strike convexity** — violations of non-negative second price differences across neighboring strikes;
-- **Calendar-spread consistency** — cases where a longer-maturity call is predicted to be cheaper than a shorter-maturity call at the same date and strike;
-- **Delta-hedging residuals** — hedging-error RMSE and PnL variance using the supplied option delta as a common hedge ratio.
+- **strike monotonicity**;
+- **discrete strike convexity**;
+- **calendar-spread consistency**;
+- **delta-hedging residuals using the supplied option delta**.
 
 The retained aggregate outputs are:
 
@@ -295,7 +292,7 @@ The retained aggregate outputs are:
 | Calendar-spread violation | 6.10% | 5.90% |
 | Hedging RMSE | 23.48 | 23.93 |
 
-RA-MoE-4E and BSM therefore exhibit similar strike-monotonicity violation rates. RA-MoE-4E shows a slightly lower calendar-spread violation rate, while BSM performs slightly better on the retained discrete-convexity and hedging diagnostics.
+RA-MoE-4E and BSM exhibit similar strike-monotonicity violation rates. RA-MoE-4E shows a slightly lower calendar-spread violation rate, while BSM performs slightly better on the retained discrete-convexity and hedging diagnostics.
 
 These tests are empirical post-hoc diagnostics rather than theoretical guarantees that RA-MoE-4E satisfies no-arbitrage conditions.
 
@@ -378,18 +375,11 @@ This repository is a modular refactor of the original experimental RA-MoE-4E cod
 
 The refactoring aims to improve readability and organization while preserving the implemented model and training behaviour.
 
-Where the written methodology and supplied final implementation differ, the repository prioritizes the **implemented experimental behaviour** rather than silently modifying the code to match the written description.
-
-Material differences identified during refactoring include aspects of:
-
-- Transformer positional encoding;
-- temporal feature definitions;
-- residual-expert feature specification;
-- selected hyperparameters;
-- training-stage descriptions;
-- routing regularization behaviour.
+Where the written methodology and final implementation differ in feature definitions, Transformer details, training stages, or routing regularization, this repository prioritizes the **implemented experimental behaviour** and documents rather than silently rewrites those differences.
 
 Historical output files from different experimental runs may contain small differences. Public headline results therefore use a single internally consistent cross-market comparison output rather than mixing metrics across runs.
+
+The original evaluation code also computes relative pricing error (RPE). It is retained in the public evaluation utilities but is not used as a headline metric because of its sensitivity to low-priced options.
 
 ---
 
@@ -413,4 +403,4 @@ Finally, this repository is a modular refactor of an experimental research codeb
 
 **Yitong Li**
 
-Research interests: **Machine Learning for Science · Robust & Generalizable ML · Representation Learning · Biomedical AI**
+Research interests: **Machine Learning for Science · Robust & Generalizable ML · Representation Learning · Theory-Guided AI**
