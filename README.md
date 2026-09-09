@@ -36,7 +36,9 @@ RA-MoE-4E combines four heterogeneous experts through a **regime-aware gating ne
 For each option observation, the final prediction is a dynamically weighted combination of the four expert outputs:
 
 $$
-P_{\mathrm{hybrid}} = \sum_{i=1}^{4} w_i E_i(X_i)
+P_{\mathrm{hybrid}}
+=
+\sum_{i=1}^{4} w_i E_i(X_i)
 $$
 
 where
@@ -123,7 +125,15 @@ The default sequence length is **10 observations**.
 
 ### Gating Network
 
-The gating network combines the standardized static representation with additional state features including implied volatility, moneyness, time to maturity, realized-volatility measures, implied-volatility deviation, bid–ask spread, and change in open interest.
+The gating network combines the standardized static representation with additional state features including:
+
+- implied volatility;
+- moneyness;
+- time to maturity;
+- realized-volatility measures;
+- implied-volatility deviation;
+- bid–ask spread;
+- change in open interest.
 
 The resulting routing distribution determines the contribution of each expert to the final prediction.
 
@@ -140,7 +150,7 @@ Raw option data were obtained from **OptionMetrics IvyDB U.S.**
 
 > **Data availability:** Raw OptionMetrics observations and large derived datasets are not distributed in this repository because of licensing restrictions. The repository exposes the model, preprocessing, training, and evaluation logic without redistributing proprietary observations.
 
-See [`data/README.md`](data/README.md) for the expected input schema.
+See [`data/README.md`](data/README.md) for the expected input schema and preprocessing requirements.
 
 ---
 
@@ -166,7 +176,9 @@ The gating network is frozen while the trainable experts are optimized through t
 
 ### Stage 3 — Joint Fine-Tuning
 
-The gate is unfrozen and the complete mixture is jointly optimized for up to **20 epochs**, with validation-based early stopping using a patience of **5 epochs**.
+The gate is unfrozen and the complete mixture is jointly optimized for up to **20 epochs**.
+
+Validation-based early stopping is used with a patience of **5 epochs**, after which the best validation model state is restored.
 
 The supplied implementation uses:
 
@@ -205,7 +217,7 @@ Core metrics are separated from market-specific and post-hoc analyses in the pub
 
 ## Main Results
 
-The canonical cross-market evaluation output reports lower MSE, MAE, and RMSE for RA-MoE-4E than for the BSM baseline in both SPX and AAPL.
+The canonical cross-market evaluation reports lower MSE, MAE, and RMSE for RA-MoE-4E than for the BSM baseline in both SPX and AAPL.
 
 | Market | RA-MoE-4E MSE | BSM MSE | RA-MoE-4E RMSE | BSM RMSE | Relative MSE Improvement |
 |---|---:|---:|---:|---:|---:|
@@ -227,7 +239,15 @@ $$
 \times 100.
 $$
 
-The cross-market comparison also reports lower MAE for RA-MoE-4E in both markets.
+<p align="center">
+  <img src="figures/pricing_performance.png"
+       alt="RA-MoE-4E pricing performance across SPX and AAPL"
+       width="760">
+</p>
+
+<p align="center">
+  <em>Relative MSE improvement over the BSM baseline. RA-MoE-4E reduces test-set MSE by 11.55% on SPX and 14.46% on AAPL; the corresponding RMSE changes are shown in the figure.</em>
+</p>
 
 ---
 
@@ -240,9 +260,19 @@ The learned routing distributions differ substantially between SPX and AAPL.
 | **SPX** | 94.11% | 2.12% | 3.60% | 0.17% |
 | **AAPL** | 44.27% | 44.76% | 4.16% | 6.82% |
 
-In the canonical cross-market output, SPX routing is dominated by the BSM expert, whereas AAPL assigns comparable average weight to the BSM and residual-correction experts.
+<p align="center">
+  <img src="figures/gating_weights_across_markets.png"
+       alt="Cross-market RA-MoE-4E gating allocations"
+       width="760">
+</p>
 
-These allocations are interpreted as descriptive evidence of learned expert specialization rather than as causal evidence about market structure.
+<p align="center">
+  <em>Average gating allocations across SPX and AAPL. SPX routing is strongly concentrated on the BSM expert, whereas AAPL distributes substantial weight between the BSM and residual-correction experts.</em>
+</p>
+
+The contrast suggests that the learned mixture does not rely on a single fixed expert allocation across markets. Instead, the gating network exhibits substantially different routing patterns in the two experimental settings.
+
+These allocations are interpreted as **descriptive evidence of learned expert specialization**, rather than as causal evidence about the underlying market structure.
 
 ---
 
@@ -256,7 +286,7 @@ For the **Residual MLP**, the original analysis attenuates the learned residual 
 
 The public analysis therefore describes these experiments as **expert contribution sensitivity**, rather than as retrained architectural ablation.
 
-The original output indicates that prediction sensitivity differs substantially across experts and markets. These results should be interpreted as post-hoc diagnostics of the trained mixture.
+The original outputs indicate that prediction sensitivity differs substantially across experts and markets. These results are interpreted as post-hoc diagnostics of the trained mixture rather than estimates from independently retrained reduced architectures.
 
 ---
 
@@ -268,12 +298,21 @@ The analysis is performed on a filtered call-option subset, restricting observat
 
 The diagnostics include:
 
-- **Strike monotonicity**
-- **Discrete strike convexity**
-- **Calendar-spread consistency**
-- **Delta-hedging residuals**
+- **Strike monotonicity** — whether predicted call prices increase as strike increases within matched date and maturity groups;
+- **Discrete strike convexity** — violations of non-negative second price differences across neighboring strikes;
+- **Calendar-spread consistency** — cases where a longer-maturity call is predicted to be cheaper than a shorter-maturity call at the same date and strike;
+- **Delta-hedging residuals** — hedging-error RMSE and PnL variance using the supplied option delta as a common hedge ratio.
 
-In the retained output, RA-MoE-4E and BSM exhibit similar strike-monotonicity violation rates. RA-MoE-4E shows a slightly lower calendar-spread violation rate, while BSM shows lower discrete-convexity violations and slightly lower hedging-error diagnostics.
+The retained aggregate outputs are:
+
+| Diagnostic | BSM | RA-MoE-4E |
+|---|---:|---:|
+| Strike monotonicity violation | 3.13% | 3.18% |
+| Discrete convexity violation | 33.16% | 36.43% |
+| Calendar-spread violation | 6.10% | 5.90% |
+| Hedging RMSE | 23.48 | 23.93 |
+
+RA-MoE-4E and BSM therefore exhibit similar strike-monotonicity violation rates. RA-MoE-4E shows a slightly lower calendar-spread violation rate, while BSM performs slightly better on the retained discrete-convexity and hedging diagnostics.
 
 These tests are empirical post-hoc diagnostics rather than theoretical guarantees that RA-MoE-4E satisfies no-arbitrage conditions.
 
@@ -288,8 +327,21 @@ RA-MoE-4E/
 ├── requirements.txt
 ├── .gitignore
 │
+├── figures/
+│   ├── architecture.png
+│   ├── pricing_performance.png
+│   └── gating_weights_across_markets.png
+│
 ├── data/
 │   └── README.md
+│
+├── results/
+│   ├── README.md
+│   ├── pricing_summary.csv
+│   └── financial_consistency/
+│       ├── no_arbitrage.csv
+│       ├── calendar.csv
+│       └── hedging.csv
 │
 ├── scripts/
 │   └── train.py
@@ -302,30 +354,12 @@ RA-MoE-4E/
 └── src/
     └── ra_moe/
         ├── models/
-        │   ├── bsm.py
-        │   ├── mlp.py
-        │   ├── transformer.py
-        │   ├── gating.py
-        │   └── ra_moe.py
-        │
         ├── data/
-        │   ├── schema.py
-        │   ├── preprocessing.py
-        │   ├── temporal.py
-        │   ├── features.py
-        │   ├── split.py
-        │   ├── dataset.py
-        │   └── pipeline.py
-        │
         ├── training/
-        │   ├── losses.py
-        │   ├── epoch.py
-        │   └── workflow.py
-        │
         └── evaluation/
-            ├── metrics.py
-            └── statistical.py
 ```
+
+The `src/ra_moe/` package contains the modular model, preprocessing, training, and core evaluation implementation. Market-specific and post-hoc research analyses are kept separately under `analysis/`.
 
 ---
 
@@ -351,7 +385,7 @@ python scripts/train.py \
     --sample-fraction 0.1
 ```
 
-Because the underlying OptionMetrics data are proprietary, the original datasets are not included.
+Because the underlying OptionMetrics data are proprietary, the original datasets are not included in this repository.
 
 ---
 
