@@ -225,7 +225,6 @@ Beyond aggregate pricing accuracy, the project examines:
 - cross-market expert allocation;
 - post-hoc expert contribution sensitivity;
 - financial-consistency diagnostics on a filtered SPX call-option subset;
-- supplementary implied-volatility diagnostics.
 
 The public repository separates core evaluation metrics from
 market-specific and post-hoc analyses.
@@ -319,16 +318,6 @@ The diagnostics include:
 
 These are empirical post-hoc diagnostics rather than theoretical
 guarantees that the model satisfies no-arbitrage conditions.
-
----
-
-## Supplementary Implied-Volatility Analysis
-
-The original project also included supplementary implied-volatility inversion and IVRMSE analyses.
-
-These analyses are retained as supporting diagnostics rather than headline evaluation results because the original SPX and AAPL analysis scripts use slightly different filtering rules, volatility-search ranges, and data schemas.
-
-They are therefore not interpreted as a fully standardized cross-market IVRMSE benchmark.
 
 ---
 
@@ -443,9 +432,11 @@ spacing, and the hedging analysis uses a supplied option delta rather
 than a model-derived RA-MoE hedge ratio. These results should therefore
 not be interpreted as theoretical no-arbitrage guarantees.
 
-Some supplementary implied-volatility analyses use market-specific
-filtering, inversion ranges, and data schemas and should not be
-interpreted as a unified cross-market IVRMSE benchmark.
+Supplementary implied-volatility analyses were explored during the
+original project but are not included in the public repository because
+the SPX and AAPL scripts used market-specific filtering, inversion
+ranges, and data schemas. They are therefore not treated here as a
+standardized cross-market evaluation.
 
 ---
 
